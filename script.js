@@ -11,17 +11,27 @@ let keys = {
     ArrowLeft: false,
     ArrowRight: false
 }
-let player;
+let player = {};
 
 btnStart.addEventListener('click', startGame);
 document.addEventListener('keydown', pressKeyOn);
 document.addEventListener('keyup', pressKeyOff);
 
 function playGame() {
+    if (player.gameEndCounter > 0) {
+        player.gameEndCounter--;
+        player.y = (player.y > 60) ? player.y - 30 : 60;
+        if (player.gameEndCounter == 0) {
+            gamePlay = false;
+            cancelAnimationFrame(animationGame);
+            btnStart.style.display = 'block';
+        }
+    }
     if (gamePlay) {
         updateDash();
 
         let roadParams = moveRoad();
+        moveBadGuys();
         //console.log(roadParams);
         //Movement
         if (keys.ArrowUp) {
@@ -54,6 +64,7 @@ function playGame() {
 }
 
 function startGame() {
+    container.innerHTML = '';
     btnStart.style.display = 'none';
     var div = document.createElement('div');
     div.setAttribute('class', 'playerCar');
@@ -63,14 +74,16 @@ function startGame() {
     gamePlay = true;
     player = {
         ele: div,
-        speed: 1,
+        speed: 0,
         lives: 3,
         gameScore: 0,
-        carsToPass: 10,
+        carsToPass: 3,
         score: 0,
-        roadWidth: 250
+        roadWidth: 250,
+        gameEndCounter: 0
     };
     startBoard();
+    setupBadGuys(10);
 }
 
 function pressKeyOn(event) {
@@ -136,4 +149,92 @@ function moveRoad() {
         'width': previousRoad,
         'left': previousRoadWidth
     });
+}
+
+function setupBadGuys(num) {
+    for (let x = 0; x < num; x++) {
+        let temp = 'badGuy' + (x + 1);
+        let div = document.createElement('div');
+        div.innerHTML = x + 1;
+        div.setAttribute('class', 'baddy');
+        div.setAttribute('id', temp);
+        div.style.backgroundColor = randomColor();
+        makeBad(div);
+        container.appendChild(div);
+    }
+}
+
+function makeBad(e) {
+    let tempRoad = document.querySelector('.road');
+    e.style.left = tempRoad.offsetLeft + Math.ceil(Math.random() * tempRoad.offsetWidth) - 30 + 'px';
+    e.style.top = Math.ceil(Math.random() * -400) + 'px';
+    e.speed = Math.ceil(Math.random() * 17) + 2;
+}
+
+function randomColor() {
+    function c() {
+        let hex = Math.floor(Math.random() * 256).toString(16);
+        return ('0' + String(hex)).substr(-2);
+    }
+    return '#' + c() + c() + c();
+}
+
+function moveBadGuys() {
+    let tempBaddy = document.querySelectorAll('.baddy');
+    for (let i = 0; i < tempBaddy.length; i++) {
+        for (let j = 0; j < tempBaddy.length; j++) {
+            if (i != j && isCollide(tempBaddy[i], tempBaddy[j])) {
+                tempBaddy[j].style.top = (tempBaddy[j].offsetTop + 50) + 'px';
+                tempBaddy[i].style.top = (tempBaddy[i].offsetTop - 50) + 'px';
+                tempBaddy[j].style.left = (tempBaddy[j].offsetLeft - 50) + 'px';
+                tempBaddy[i].style.left = (tempBaddy[i].offsetLeft + 50) + 'px';
+            }
+        }
+        let y = tempBaddy[i].offsetTop + player.speed - tempBaddy[i].speed;
+        if (y > 2000 || y < -2000) {
+            //reset car
+            if (y > 2000) {
+                player.score++;
+                if (player.score > player.carsToPass) {
+                    gameOverPlay();
+                }
+            }
+            makeBad(tempBaddy[i]);
+        } else {
+            tempBaddy[i].style.top = y + 'px';
+            let hitCar = isCollide(tempBaddy[i], player.ele);
+            console.log(hitCar);
+            if (hitCar) {
+                player.speed = 0;
+                player.lives--;
+                if (player.lives < 1) {
+                    player.gameEndCounter = 1;
+                }
+                makeBad(tempBaddy[i]);
+            }
+        }
+    }
+}
+
+function isCollide(a, b) {
+    let aRect = a.getBoundingClientRect();
+    let bRect = b.getBoundingClientRect();
+    //console.log(aRect);
+
+    return !(
+        (aRect.bottom < bRect.top) || (aRect.top > bRect.bottom) || (aRect.right < bRect.left) || (aRect.left > bRect.right))
+
+}
+
+function gameOverPlay() {
+    let div = document.createElement('div');
+    div.setAttribute('class', 'road');
+    div.style.top = '0px';
+    div.style.width = '250px';
+    div.style.backgroundColor = 'red';
+    div.innerHTML = 'FINISH';
+    div.style.fontSize = '3em';
+    container.appendChild(div);
+    player.gameEndCounter = 12;
+    player.speed = 0;
 }

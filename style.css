@@ -59,6 +59,19 @@
     z-index: 100;
 }
 
+.baddy {
+    position: absolute;
+    height: 80px;
+    width: 40px;
+    top:0px;
+    left:0px;
+    border-radius: 5px;
+    background-image: url(car2.png);
+    background-size: cover;
+    z-index: 99;
+    text-align: center;
+}
+
 .dashboard {
     background-color: black;
     color: white;
